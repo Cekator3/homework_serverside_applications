@@ -1,0 +1,101 @@
+volumes:
+    public:
+    public2:
+    postgres-data:
+    redis-data:
+
+services:
+    postgres:
+        image: postgres:17.0-alpine3.19
+        volumes:
+            # To save database data in persistent docker volume
+            - postgres-data:/var/lib/postgresql/data
+        environment:
+            POSTGRES_USER: '${DB_USERNAME}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD}'
+            POSTGRES_DB: '${DB_DATABASE}'
+            PGPASSWORD: '${DB_PASSWORD}'
+        env_file:
+            - .env
+        networks:
+            - app
+        healthcheck:
+            test: ["CMD", "pg_isready", '-q', '-d', '${DB_DATABASE}', '-U', '${DB_USERNAME}']
+            timeout: 5s
+            retries: 3
+
+    redis:
+        image: redis:7.4.0-alpine3.20
+        volumes:
+            # To save redis data in persistent docker volume
+            - redis-data:/data
+        env_file:
+            - .env
+        networks:
+            - app
+        healthcheck:
+            test: ["CMD", "redis-cli", 'ping']
+            retries: 3
+            timeout: 5s
+
+    # Web server
+    web:
+        image: nginx_img
+        build:
+            context: .
+            dockerfile: .docker/nginx/Dockerfile
+        volumes:
+            # To share public data (css, js, images) between nginx and php
+            - public:/var/www/html/public
+            - public2:/var/www/html/storage/app/public
+        env_file:
+            - .env
+        ports:
+            - "80:80"
+        networks:
+            - app
+
+    php:
+        image: php_img
+        build:
+            context: .
+            dockerfile: .docker/php/Dockerfile
+        volumes:
+            # To share public data (css, js, images) between nginx and php
+            - public:/var/www/html/public
+            - public2:/var/www/html/storage/app/public
+        env_file:
+            - .env
+        networks:
+            - app
+
+        develop:
+            watch:
+                - action: rebuild
+                  path: ./app
+                  target: /var/www/html/app
+                - action: rebuild
+                  path: ./bootstrap
+                  target: /var/www/html/bootstrap
+                - action: rebuild
+                  path: ./config
+                  target: /var/www/html/config
+                - action: rebuild
+                  path: ./database
+                  target: /var/www/html/database
+                - action: rebuild
+                  path: ./lang
+                  target: /var/www/html/lang
+                - action: rebuild
+                  path: ./public
+                  target: /var/www/html/public
+                - action: rebuild
+                  path: ./resources
+                  target: /var/www/html/resources
+                - action: rebuild
+                  path: ./routes
+                  target: /var/www/html/routes
+
+networks:
+    app:
+        driver: bridge
