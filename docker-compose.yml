@@ -17,6 +17,8 @@ services:
             PGPASSWORD: '${DB_PASSWORD}'
         env_file:
             - .env
+        ports:
+            - ${DB_PORT}:5432
         networks:
             - app
         healthcheck:
@@ -95,6 +97,9 @@ services:
                 - action: rebuild
                   path: ./routes
                   target: /var/www/html/routes
+                - action: rebuild
+                  path: ./.env
+                  target: /var/www/html/.env
 
 networks:
     app:
