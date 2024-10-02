@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use DB;
 use App\Models\Role;
+use App\Models\ChangeLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Models\RolePermission;
@@ -55,8 +57,12 @@ class RolesController
             ],
         ]);
 
-        $role->fill($data);
-        $role->save();
+        DB::transaction(function () use ($role, $data) {
+            $role->fill($data);
+            ChangeLog::log_entity_changes($role);
+            $role->save();
+        });
+
         return $role;
     }
 
@@ -128,5 +134,16 @@ class RolesController
             ['permission_id', '=', $permissionId]
         ])->firstOrFail();
         $role_permission->restore();
+    }
+
+    /**
+     * Returns role's change logs
+     */
+    function getRoleChangeLogs(mixed $roleId)
+    {
+        return ChangeLog::where([
+            ['entity_name', '=', Role::class],
+            ['entity_id', '=', $roleId]
+        ])->get();
     }
 }

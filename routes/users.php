@@ -21,4 +21,7 @@ Route::controller(UsersController::class)
             ->delete('/{id}/roles/{role_id}/soft', 'softDeleteUserRole');
         Route::middleware(EnsureUserHasPermission::class . ':update-user')
             ->post('/{id}/roles/{role_id}/restore', 'restoreSoftDeletedUserRole');
+
+        Route::middleware(EnsureUserHasPermission::class . ':get-story-user')
+            ->get('/{id}/story', 'getUserChangeLogs');
     });

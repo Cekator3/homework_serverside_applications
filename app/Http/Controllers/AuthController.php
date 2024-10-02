@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use DB;
 use App\Models\User;
+use App\Models\ChangeLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -89,8 +91,11 @@ class AuthController
         if (!Hash::check($request->oldPassword, $user->password))
             return new JsonResponse(['message' => "Указан неверный старый пароль"], Response::HTTP_BAD_REQUEST);
 
-        $user->password = Hash::make($request->newPassword);
-        $user->save();
+        DB::transaction(function () use ($request, $user) {
+            $user->password = Hash::make($request->newPassword);
+            ChangeLog::log_entity_changes($user);
+            $user->save();
+        });
     }
 
     /**

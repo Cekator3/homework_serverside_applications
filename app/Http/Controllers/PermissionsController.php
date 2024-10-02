@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use DB;
+use App\Models\ChangeLog;
 use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -32,25 +34,29 @@ class PermissionsController
 
     function updatePermission(Request $request, mixed $permissionId)
     {
-        $role = Permission::findOrFail($permissionId);
+        $permission = Permission::findOrFail($permissionId);
 
         $data = $request->validate([
             'name' => [
                 'required',
                 'string',
-                Rule::unique('roles')->ignore($role)
+                Rule::unique('permissions')->ignore($permission)
             ],
             'description' => 'string',
             'code' => [
                 'required',
                 'string',
-                Rule::unique('roles')->ignore($role)
+                Rule::unique('permissions')->ignore($permission)
             ],
         ]);
 
-        $role->fill($data);
-        $role->save();
-        return $role;
+        DB::transaction(function () use ($permission, $data) {
+            $permission->fill($data);
+            ChangeLog::log_entity_changes($permission);
+            $permission->save();
+        });
+
+        return $permission;
     }
 
     function hardDeletePermission(mixed $permissionId)
@@ -68,5 +74,16 @@ class PermissionsController
     function restoreSoftDeletedPermission(mixed $permissionId)
     {
         Permission::withTrashed()->find($permissionId)->restore();
+    }
+
+    /**
+     * Returns permission's change logs
+     */
+    function getPermissionChangeLogs(mixed $permissionId)
+    {
+        return ChangeLog::where([
+            ['entity_name', '=', Permission::class],
+            ['entity_id', '=', $permissionId]
+        ])->get();
     }
 }

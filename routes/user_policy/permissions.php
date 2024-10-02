@@ -28,4 +28,7 @@ Route::controller(PermissionsController::class)
 
         Route::middleware(EnsureUserHasPermission::class . ':restore-permission')
             ->post('/{id}/restore', 'restoreSoftDeletedPermission');
+
+        Route::middleware(EnsureUserHasPermission::class . ':get-story-permission')
+            ->get('/{id}/story', 'getPermissionChangeLogs');
     });

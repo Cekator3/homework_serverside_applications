@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\UserRole;
+use App\Models\ChangeLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
@@ -67,5 +68,16 @@ class UsersController
             ['role_id', '=', $roleId],
         ])->firstOrFail();
         $role_permission->restore();
+    }
+
+    /**
+     * Returns user's change logs
+     */
+    function getUserChangeLogs(mixed $userId)
+    {
+        return ChangeLog::where([
+            ['entity_name', '=', User::class],
+            ['entity_id', '=', $userId]
+        ])->get();
     }
 }
