@@ -3,11 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Role;
-use Illuminate\Http\Request;
+use App\DTO\Roles\RoleDTO;
 use Illuminate\Http\Response;
+use App\DTO\Roles\RoleListDTO;
 use App\Models\RolePermission;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Roles\CreateRequest;
+use App\Http\Requests\Roles\UpdateRequest;
+use App\DTO\RolePermissions\RolePermissionDTO;
+use App\Http\Requests\RolePermissions\AddRequest;
+use App\DTO\RolePermissions\RolePermissionListDTO;
 
 
 class RolesController
@@ -17,47 +22,34 @@ class RolesController
      */
     function getRoles()
     {
-        return Role::all();
+        $roles = Role::all();
+        return new JsonResponse(RoleListDTO::fromOrm($roles));
     }
 
     function getRole(mixed $roleId)
     {
-        return Role::findOrFail($roleId);
-    }
-
-    function createRole(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|string|unique:roles',
-            'description' => 'required|string|max:255',
-            'code' => 'nullable|string|unique:roles',
-        ]);
-        $validatedData['created_by'] = $request->user()->id;
-
-        return Role::create($validatedData);
-    }
-
-    function updateRole(Request $request, mixed $roleId)
-    {
         $role = Role::findOrFail($roleId);
+        return new JsonResponse(RoleDTO::fromOrm($role));
+    }
 
-        $data = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                Rule::unique('roles')->ignore($role)
-            ],
-            'description' => 'string',
-            'code' => [
-                'required',
-                'string',
-                Rule::unique('roles')->ignore($role)
-            ],
-        ]);
+    function createRole(CreateRequest $request)
+    {
+        $data = $request->validated();
+        $data['created_by'] = $request->user()->id;
 
+        $role = Role::create($data);
+        return new JsonResponse(RoleDTO::fromOrm($role));
+    }
+
+    function updateRole(UpdateRequest $request, mixed $roleId)
+    {
+        $data = $request->validated();
+
+        $role = Role::findOrFail($roleId);
         $role->fill($data);
         $role->save();
-        return $role;
+
+        return new JsonResponse(RoleDTO::fromOrm($role));
     }
 
     function hardDeleteRole(mixed $roleId)
@@ -79,28 +71,20 @@ class RolesController
 
     function getRolePermissions(mixed $roleId)
     {
-        return RolePermission::where('role_id', '=', $roleId)->get();
+        $rolePermissions = RolePermission::where('role_id', '=', $roleId)->get();
+        return new JsonResponse(RolePermissionListDTO::fromOrm($rolePermissions));
     }
 
-    function addRolePermission(Request $request, mixed $roleId, mixed $permissionId)
+    function addRolePermission(AddRequest $request, mixed $roleId, mixed $permissionId)
     {
-        $data = Validator::make(
-            data: [
-                'role_id' => $roleId,
-                'permission_id' => $permissionId,
-                'created_by' => $request->user()->id,
-            ],
-            rules: [
-                'role_id' => 'required|exists:roles,id',
-                'permission_id' => "required|exists:permissions,id",
-                'created_by' => 'required'
-            ]
-        )->validate();
+        $data = $request->validated();
+        $data['created_by'] = $request->user()->id;
 
         if (RolePermission::where(['permission_id' => $permissionId, 'role_id' => $roleId])->exists())
             abort(Response::HTTP_BAD_REQUEST, "This permission has already been assigned to this role");
 
-        return RolePermission::create($data);
+        $rolePermission = RolePermission::create($data);
+        return new JsonResponse(RolePermissionDTO::fromOrm($rolePermission));
     }
 
     function hardDeleteRolePermission(mixed $roleId, mixed $permissionId)
