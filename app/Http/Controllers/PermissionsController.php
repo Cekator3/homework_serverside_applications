@@ -5,70 +5,58 @@ namespace App\Http\Controllers;
 use DB;
 use App\Models\ChangeLog;
 use App\Models\Permission;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\JsonResponse;
+use App\DTO\Permissions\PermissionDTO;
+use App\DTO\Permissions\PermissionListDTO;
+use App\Http\Requests\Permissions\CreateRequest;
+use App\Http\Requests\Permissions\UpdateRequest;
 
 class PermissionsController
 {
     function getPermissions()
     {
-        return Permission::all();
+        $permissions = Permission::all();
+        return new JsonResponse(PermissionListDTO::fromOrm($permissions));
     }
 
     function getPermission(mixed $permissionId)
     {
-        return Permission::findOrFail($permissionId);
-    }
-
-    function createPermission(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|string|unique:permissions',
-            'description' => 'required|string|max:255',
-            'code' => 'nullable|string|unique:permissions',
-        ]);
-        $validatedData['created_by'] = $request->user()->id;
-
-        return Permission::create($validatedData);
-    }
-
-    function updatePermission(Request $request, mixed $permissionId)
-    {
         $permission = Permission::findOrFail($permissionId);
+        return new JsonResponse(PermissionDTO::fromOrm($permission));
+    }
 
-        $data = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                Rule::unique('permissions')->ignore($permission)
-            ],
-            'description' => 'string',
-            'code' => [
-                'required',
-                'string',
-                Rule::unique('permissions')->ignore($permission)
-            ],
-        ]);
+    function createPermission(CreateRequest $request)
+    {
+        $data = $request->validated();
+        $data['created_by'] = $request->user()->id;
+        $result = Permission::create($data);
+        return new JsonResponse(PermissionDTO::fromOrm($result));
+    }
 
+    function updatePermission(UpdateRequest $request, mixed $permissionId)
+    {
+        $data = $request->validated();
+
+        $permission = Permission::findOrFail($permissionId);
         DB::transaction(function () use ($permission, $data) {
             $permission->fill($data);
             ChangeLog::log_entity_changes($permission);
             $permission->save();
         });
 
-        return $permission;
+        return new JsonResponse(PermissionDTO::fromOrm($permission));
     }
 
     function hardDeletePermission(mixed $permissionId)
     {
-        $role = Permission::withTrashed()->findOrFail($permissionId);
-        $role->forceDelete();
+        $permission = Permission::withTrashed()->findOrFail($permissionId);
+        $permission->forceDelete();
     }
 
     function softDeletePermission(mixed $permissionId)
     {
-        $role = Permission::findOrFail($permissionId);
-        $role->delete();
+        $permission = Permission::findOrFail($permissionId);
+        $permission->delete();
     }
 
     function restoreSoftDeletedPermission(mixed $permissionId)

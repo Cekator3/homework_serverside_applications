@@ -5,42 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UserRole;
 use App\Models\ChangeLog;
-use Illuminate\Http\Request;
+use App\DTO\Auth\UserListDTO;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\JsonResponse;
+use App\DTO\UserRoles\UserRoleDTO;
+use App\DTO\UserRoles\UserRoleListDTO;
+use App\Http\Requests\Users\AddUserRoleRequest;
 
 
 class UsersController
 {
     function getUsers()
     {
-        return User::all();
+        $users = User::all();
+        return new JsonResponse(UserListDTO::fromOrm($users));
     }
 
     function getUserRoles(mixed $userId)
     {
-        return UserRole::where('user_id', '=', $userId)->get();
+        $userRoles = UserRole::where('user_id', '=', $userId)->get();
+        return new JsonResponse(UserRoleListDTO::fromOrm($userRoles));
     }
 
-    function addUserRole(Request $request, mixed $userId, mixed $roleId)
+    function addUserRole(AddUserRoleRequest $request, mixed $userId, mixed $roleId)
     {
-        $data = Validator::make(
-            data: [
-                'user_id' => $userId,
-                'role_id' => $roleId,
-                'created_by' => $request->user()->id,
-            ],
-            rules: [
-                'user_id' => "required|exists:users,id",
-                'role_id' => 'required|exists:roles,id',
-                'created_by' => 'required'
-            ]
-        )->validate();
+        $data = $request->validated();
+        $data['created_by'] = $request->user()->id;
 
         if (UserRole::where(['user_id' => $userId, 'role_id' => $roleId])->exists())
             abort(Response::HTTP_BAD_REQUEST, "User already have this role");
 
-        return UserRole::create($data);
+        $userRole = UserRole::create($data);
+        return new JsonResponse(UserRoleDTO::fromOrm($userRole));
     }
 
     function hardDeleteUserRole(mixed $userId, mixed $roleId)
