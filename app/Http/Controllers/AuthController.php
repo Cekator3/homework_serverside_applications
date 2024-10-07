@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use DB;
 use App\Models\User;
+use App\DTO\Auth\UserDTO;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use Symfony\Component\HttpFoundation\Response;
+use App\Http\Requests\Auth\ChangePasswordRequest;
 
 
 class AuthController
@@ -15,26 +19,28 @@ class AuthController
     /**
      * Tries to login a user
      */
-    function login(Request $request)
+    function login(LoginRequest $request)
     {
-        $request->validate([
-            'name' => 'required|alpha|max:255|min:7',
-            'password' => [
-                'required',
-                Password::min(8)
-                        ->letters()
-                        ->mixedCase()
-                        ->numbers()
-                        ->symbols()
-            ],
-        ]);
         $user = User::where('name', $request->name)->first();
 
         if (!$user || !Hash::check($request->password, $user->password))
             return new JsonResponse(['message' => "Неверный логин или пароль"], Response::HTTP_BAD_REQUEST);
 
-        $user->tokens()->delete();
+        DB::beginTransaction();
         $token = $user->createToken($user->name);
+
+        # Сохраняем приватный токен в открытом виде в БД, т.к. по заданию нужно в getUserTokens
+        # возвращать список приватных токенов, а я способа расшифровать публичный sha-256 токен не знаю
+        $token->accessToken->plain_text_token = $token->plainTextToken;
+        $token->accessToken->save();
+
+        $tokensAmount = $user->tokens()->count();
+        if ($tokensAmount > config('sanctum.max_tokens'))
+        {
+            $tokensToDelete = $tokensAmount - config('sanctum.max_tokens');
+            $user->tokens()->oldest()->limit($tokensToDelete)->delete();
+        }
+        DB::commit();
 
         return ['token' => $token->plainTextToken];
     }
@@ -42,26 +48,20 @@ class AuthController
     /**
      * Tries to register a user
      */
-    function register(Request $request)
+    function register(RegisterRequest $request)
     {
-        $data = $request->validate([
-            'name' => 'required|alpha|max:255|min:7|unique:users',
-            'email' => 'required|email|unique:users',
-            'password' => [
-                'required',
-                'confirmed',
-                Password::min(8)
-                        ->letters()
-                        ->mixedCase()
-                        ->numbers()
-                        ->symbols()
-                        ->uncompromised()
-            ],
-            'birthday' => 'required|date_format:Y-m-d'
-        ]);
+        $data = $request->validated();
 
+        DB::beginTransaction();
         $user = User::create($data);
         $token = $user->createToken($user->name);
+
+        # Сохраняем приватный токен в открытом виде в БД, т.к. по заданию нужно в getUserTokens
+        # возвращать список приватных токенов, а я способа расшифровать публичный sha-256 токен не знаю
+        $token->accessToken->plain_text_token = $token->plainTextToken;
+        $token->accessToken->save();
+
+        DB::commit();
 
         return new JsonResponse(['token' => $token->plainTextToken], Response::HTTP_CREATED);
     }
@@ -69,27 +69,16 @@ class AuthController
     /**
      * Tries to change the authenticated user's password
      */
-    function changePassword(Request $request)
+    function changePassword(ChangePasswordRequest $request)
     {
-        $validation_rules = [
-            'required',
-            Password::min(8)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols()
-        ];
-        $request->validate([
-            'oldPassword' => $validation_rules,
-            'newPassword' => $validation_rules
-        ]);
+        $data = $request->validated();
 
         $user = $request->user();
 
-        if (!Hash::check($request->oldPassword, $user->password))
+        if (!Hash::check($data['old_password'], $user->password))
             return new JsonResponse(['message' => "Указан неверный старый пароль"], Response::HTTP_BAD_REQUEST);
 
-        $user->password = Hash::make($request->newPassword);
+        $user->password = Hash::make($data['new_password']);
         $user->save();
     }
 
@@ -106,7 +95,7 @@ class AuthController
      */
     function getUserInfo(Request $request)
     {
-        return ["user" => $request->user()];
+        return ["user" => UserDTO::fromOrm($request->user())];
     }
 
     /**
@@ -114,7 +103,7 @@ class AuthController
      */
     function getUserTokens(Request $request)
     {
-        return $request->user()->tokens()->get()->pluck('token');
+        return $request->user()->tokens()->get()->pluck('plain_text_token');
     }
 
     /**
