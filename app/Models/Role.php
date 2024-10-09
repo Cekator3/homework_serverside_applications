@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Models\Permission;
-use App\Models\RolePermission;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\traits\SoftDeletesWithAuthor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

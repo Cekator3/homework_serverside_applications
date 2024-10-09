@@ -112,4 +112,5 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'default_user_role_code' => 'Guest'
 ];
