@@ -37,7 +37,8 @@ class RolePermissionSeeder extends Seeder
 
         $roles_permissions['Guest'] []= 'get-list-user';
 
-        foreach ($entities_prefixes as $prefix)
+        $prefixes = ['get-list-', 'read-', 'update-'];
+        foreach ($prefixes as $prefix)
             $roles_permissions['User'] []= "{$prefix}user";
 
         foreach ($permissions as $name => $id)

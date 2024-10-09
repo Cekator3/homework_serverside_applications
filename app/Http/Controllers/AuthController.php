@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use DB;
+use App\Models\Role;
 use App\Models\User;
+use App\Models\UserRole;
 use App\DTO\Auth\UserDTO;
 use App\Models\ChangeLog;
 use Illuminate\Http\Request;
@@ -24,15 +26,14 @@ class AuthController
     {
         $user = User::where('name', $request->name)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password))
+        if (! $user || ! Hash::check($request->password, $user->password))
             return new JsonResponse(['message' => "Неверный логин или пароль"], Response::HTTP_BAD_REQUEST);
 
         DB::beginTransaction();
         $token = $user->createToken($user->name);
 
         $tokensAmount = $user->tokens()->count();
-        if ($tokensAmount > config('sanctum.max_tokens'))
-        {
+        if ($tokensAmount > config('sanctum.max_tokens')) {
             $tokensToDelete = $tokensAmount - config('sanctum.max_tokens');
             $user->tokens()->oldest()->limit($tokensToDelete)->delete();
         }
@@ -51,6 +52,13 @@ class AuthController
         DB::beginTransaction();
         $user = User::create($data);
         $token = $user->createToken($user->name);
+        $guest_role_id = Role::where('code', '=', config('auth.default_user_role_code'))
+                             ->first('id')->id;
+        UserRole::create([
+            'user_id' => $user->id,
+            'role_id' => $guest_role_id,
+            'created_by' => $user->id
+        ]);
         DB::commit();
 
         return new JsonResponse(['token' => $token->plainTextToken], Response::HTTP_CREATED);
@@ -65,7 +73,7 @@ class AuthController
 
         $user = $request->user();
 
-        if (!Hash::check($data['old_password'], $user->password))
+        if (! Hash::check($data['old_password'], $user->password))
             return new JsonResponse(['message' => "Указан неверный старый пароль"], Response::HTTP_BAD_REQUEST);
 
         DB::transaction(function () use ($data, $user) {
