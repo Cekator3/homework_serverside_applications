@@ -29,11 +29,6 @@ class AuthController
         DB::beginTransaction();
         $token = $user->createToken($user->name);
 
-        # Сохраняем приватный токен в открытом виде в БД, т.к. по заданию нужно в getUserTokens
-        # возвращать список приватных токенов, а я способа расшифровать публичный sha-256 токен не знаю
-        $token->accessToken->plain_text_token = $token->plainTextToken;
-        $token->accessToken->save();
-
         $tokensAmount = $user->tokens()->count();
         if ($tokensAmount > config('sanctum.max_tokens'))
         {
@@ -55,12 +50,6 @@ class AuthController
         DB::beginTransaction();
         $user = User::create($data);
         $token = $user->createToken($user->name);
-
-        # Сохраняем приватный токен в открытом виде в БД, т.к. по заданию нужно в getUserTokens
-        # возвращать список приватных токенов, а я способа расшифровать публичный sha-256 токен не знаю
-        $token->accessToken->plain_text_token = $token->plainTextToken;
-        $token->accessToken->save();
-
         DB::commit();
 
         return new JsonResponse(['token' => $token->plainTextToken], Response::HTTP_CREATED);
@@ -103,7 +92,7 @@ class AuthController
      */
     function getUserTokens(Request $request)
     {
-        return $request->user()->tokens()->get()->pluck('plain_text_token');
+        return $request->user()->tokens()->get()->pluck('token');
     }
 
     /**
