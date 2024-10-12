@@ -12,7 +12,7 @@ class PermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        $entities = ['user', 'role', 'permission'];
+        $entities = ['user', 'role', 'permission', 'log-request'];
         $entities_prefixes = ['get-list-', 'read-', 'create-', 'update-', 'delete-', 'restore-', 'get-story-'];
         $values_to_insert = [];
         foreach ($entities as $entity)
