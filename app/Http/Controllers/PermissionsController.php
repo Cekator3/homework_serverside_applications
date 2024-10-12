@@ -38,11 +38,12 @@ class PermissionsController
         $data = $request->validated();
 
         $permission = Permission::findOrFail($permissionId);
-        DB::transaction(function () use ($permission, $data) {
-            $permission->fill($data);
-            ChangeLog::log_entity_changes($permission);
-            $permission->save();
-        });
+
+        DB::beginTransaction();
+        $permission->fill($data);
+        ChangeLog::log_entity_changes($permission);
+        $permission->save();
+        DB::commit();
 
         return new JsonResponse(PermissionDTO::fromOrm($permission));
     }

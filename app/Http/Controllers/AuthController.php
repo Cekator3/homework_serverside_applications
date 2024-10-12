@@ -76,11 +76,11 @@ class AuthController
         if (! Hash::check($data['old_password'], $user->password))
             return new JsonResponse(['message' => "Указан неверный старый пароль"], Response::HTTP_BAD_REQUEST);
 
-        DB::transaction(function () use ($data, $user) {
-            $user->password = Hash::make($data['new_password']);
-            ChangeLog::log_entity_changes($user);
-            $user->save();
-        });
+        DB::beginTransaction();
+        $user->password = Hash::make($data['new_password']);
+        ChangeLog::log_entity_changes($user);
+        $user->save();
+        DB::commit();
     }
 
     /**

@@ -48,11 +48,12 @@ class RolesController
         $data = $request->validated();
 
         $role = Role::findOrFail($roleId);
-        DB::transaction(function () use ($role, $data) {
-            $role->fill($data);
-            ChangeLog::log_entity_changes($role);
-            $role->save();
-        });
+
+        DB::beginTransaction();
+        $role->fill($data);
+        ChangeLog::log_entity_changes($role);
+        $role->save();
+        DB::commit();
 
         return new JsonResponse(RoleDTO::fromOrm($role));
     }
