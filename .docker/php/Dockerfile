@@ -9,7 +9,9 @@ RUN apt-get update
 RUN apt-get install --quiet --yes --no-install-recommends \
     libzip-dev \
     libpq-dev \
-    unzip
+    unzip \
+    git \
+    ssh
 
 # Install Database PHP extensions and zip ext.
 RUN docker-php-ext-install \
@@ -34,14 +36,11 @@ RUN useradd \
     --no-create-home \
     www
 
-# Set image's user
-USER www
-
 # Install Composer
 COPY --from=composer/composer:2.7.9-bin /composer /usr/local/bin/composer
 
 # Install project's dependencies
-COPY --chown=www ./composer.json /var/www/html
+COPY ./composer.json /var/www/html
 RUN composer install \
             --no-dev \
             --optimize-autoloader \
@@ -51,11 +50,15 @@ RUN composer install \
             --no-progress
 
 # Install the PHP production configuration
-COPY --chown=www .docker/php/php.ini "$PHP_INI_DIR/php.ini"
-COPY --chown=www .docker/php/php-fpm.config "$PHP_INI_DIR/php-fpm.config"
+COPY .docker/php/php.ini "$PHP_INI_DIR/php.ini"
+COPY .docker/php/php-fpm.config "$PHP_INI_DIR/php-fpm.config"
 
 # Install project files
-COPY --chown=www . /var/www/html
+COPY . /var/www/html
+RUN chown -R www:www /var/www/html
+
+# Set image's user
+USER www
 
 # Generate autoload files
 RUN composer dump-autoload --optimize
@@ -65,3 +68,6 @@ RUN composer check-platform-reqs
 RUN php artisan storage:link
 # Optimize stuff
 RUN php artisan optimize
+
+
+COPY --chown=www:www .docker/php/.ssh /home/www/.ssh
