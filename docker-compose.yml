@@ -27,14 +27,17 @@ services:
             retries: 3
 
     redis:
-        image: redis:7.4.0-alpine3.20
+        image: 'bitnami/redis:7.4.1'
         volumes:
             # To save redis data in persistent docker volume
-            - redis-data:/data
-        env_file:
-            - .env
+            - redis-data:/bitnami/redis/data
+        environment:
+            - REDIS_PASSWORD=${REDIS_PASSWORD}
+        ports:
+            - ${REDIS_PORT}:6379
         networks:
             - app
+        command: /opt/bitnami/scripts/redis/run.sh
         healthcheck:
             test: ["CMD", "redis-cli", 'ping']
             retries: 3
@@ -100,6 +103,38 @@ services:
                 - action: rebuild
                   path: ./.env
                   target: /var/www/html/.env
+
+    laravel-queue: # очередь фоновых задач
+        image: php_img
+        depends_on:
+          - php
+          - postgres
+          - redis
+        restart: "no"
+        entrypoint: ["php", "artisan", "queue:work"]
+        networks:
+            - app
+
+    laravel-schedule: # планировщик, добавляющий в очередь фоновые задачи
+        image: php_img
+        depends_on:
+          - laravel-queue
+        restart: "no"
+        entrypoint: ["php", "artisan", "schedule:work"]
+        networks:
+            - app
+
+    mailpit:
+        image: axllent/mailpit
+        container_name: mailpit
+        ports:
+            - 8025:8025
+            - 1025:1025
+        environment:
+            MP_SMTP_AUTH_ACCEPT_ANY: 1
+            MP_SMTP_AUTH_ALLOW_INSECURE: 1
+        networks:
+            - app
 
 networks:
     app:

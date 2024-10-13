@@ -19,7 +19,8 @@ RUN docker-php-ext-install \
     pdo \
     pgsql \
     pdo_pgsql \
-    opcache
+    opcache \
+    pcntl
 
 # Install and enable redis PHP extension
 RUN pecl install -o -f redis-6.0.2
