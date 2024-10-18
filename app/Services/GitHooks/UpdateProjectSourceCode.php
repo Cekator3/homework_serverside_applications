@@ -44,11 +44,11 @@ class UpdateProjectSourceCode
     {
         static::log("Updating project source code...", $userInfo);
 
-        static::log('Switching to main branch...', $userInfo);
-        static::runGitCommand(['git', 'checkout', 'main']);
-
         static::log('Discarding all changes...', $userInfo);
         static::runGitCommand(['git', 'reset', '--hard']);
+
+        static::log('Switching to main branch...', $userInfo);
+        static::runGitCommand(['git', 'checkout', 'main']);
 
         static::log('Pulling latest changes...', $userInfo);
         static::runGitCommand(['git', 'pull', 'origin', 'main']);
