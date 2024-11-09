@@ -23,9 +23,13 @@ RUN docker-php-ext-install \
     pcntl
 
 # Install and enable redis PHP extension
-RUN pecl install -o -f redis-6.0.2
-RUN docker-php-ext-enable \
-    redis
+RUN pecl install -o -f \
+        redis-6.0.2 \
+        xdebug \
+    && \
+    docker-php-ext-enable \
+        redis \
+        xdebug
 
 # Create PHP-FPM's and nginx user
 RUN groupadd \
