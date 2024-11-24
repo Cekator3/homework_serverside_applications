@@ -56,7 +56,7 @@ class GenerateApplicationUsageReport implements ShouldQueue
     }
 
 
-    private function sendReportToAdmins(array $report)
+    private function sendReportToAdmins(string $reportFilepath): void
     {
         // Получение списка администраторов
         $admins = User::whereHas('roles', function ($query) {
@@ -64,7 +64,7 @@ class GenerateApplicationUsageReport implements ShouldQueue
         })->get();
 
         Mail::to($admins)
-            ->sendNow(new \App\Mail\ApplicationUsageReport($report));
+            ->sendNow(new \App\Mail\ApplicationUsageReport($reportFilepath));
     }
 
     /**
@@ -73,7 +73,8 @@ class GenerateApplicationUsageReport implements ShouldQueue
     public function handle(): void
     {
         $reportGenerator = new \App\Services\ReportGenerators\ApplicationUsage\Json();
-        $report = $reportGenerator->generate(config('application_usage_report.max_data_age'));
-        $this->sendReportToAdmins($report);
+        $reportFilepath = $reportGenerator->generate(config('application_usage_report.max_data_age'));
+        $this->sendReportToAdmins($reportFilepath);
+        unlink($reportFilepath);
     }
 }

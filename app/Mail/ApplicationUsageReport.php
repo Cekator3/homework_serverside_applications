@@ -2,26 +2,21 @@
 
 namespace App\Mail;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Attachment;
 use Illuminate\Mail\Mailables\Content;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ApplicationUsageReport extends Mailable
 {
-    use Queueable, SerializesModels;
-
-    private array $report;
+    private string $reportFilepath;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(array $report)
+    public function __construct(string $reportFilepath)
     {
-        $this->report = $report;
+        $this->reportFilepath = $reportFilepath;
     }
 
     /**
@@ -30,7 +25,7 @@ class ApplicationUsageReport extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Application Usage Report',
+            subject: 'Отчёт об использовании приложения',
         );
     }
 
@@ -52,8 +47,9 @@ class ApplicationUsageReport extends Mailable
     public function attachments(): array
     {
         return [
-            Attachment::fromData(fn () => json_encode($this->report), name: "application_usage_report.json")
+            Attachment::fromPath($this->reportFilepath)
                 ->withMime("application/json")
+                ->as("Отчёт об использовании приложения.json")
         ];
     }
 }

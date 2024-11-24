@@ -28,19 +28,26 @@ class Json
      * Генерирует отчёт об использовании приложения в формате JSON
      *
      * @param $maxDataAge Временной интервал (в часах), за который собираются данные для отчёта
+     * @return string Путь к файлу отчёта
      */
-    public function generate(int $maxDataAge): array
+    public function generate(int $maxDataAge): string
     {
         $usersActivities = $this->userActivities->get($maxDataAge);
         $entitiesChanges = $this->entityChanges->get($maxDataAge);
         $controllerMethodCalls = $this->controllerMethodCalls->get($maxDataAge);
 
-        return [
+        $report = [
             'report_generated_at' => now()->toDateTimeString(),
             'max_data_age' => $maxDataAge,
             'users_activities' => $usersActivities,
             'entities_changes' => $entitiesChanges,
             'controllers_method_calls' => $controllerMethodCalls,
         ];
+
+        $reportEncoded = json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        $reportFilepath = \App\Utils\Files::create_temp($reportEncoded);
+
+        return $reportFilepath;
     }
 }
