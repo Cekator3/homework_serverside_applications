@@ -15,6 +15,7 @@ class ChangeLog extends Model
      * The attributes that are mass assignable.
      */
     protected $fillable = ['entity_name', 'entity_id', 'old_values', 'new_values', 'created_by'];
+    protected $hidden = ['created_by', 'created_at'];
 
     public function author() : BelongsTo
     {

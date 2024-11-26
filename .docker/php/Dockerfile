@@ -11,7 +11,8 @@ RUN apt-get install --quiet --yes --no-install-recommends \
     libpq-dev \
     unzip \
     git \
-    ssh
+    ssh \
+    libfreetype-dev libjpeg-dev libpng-dev
 
 # Install Database PHP extensions and zip ext.
 RUN docker-php-ext-install \
@@ -20,7 +21,8 @@ RUN docker-php-ext-install \
     pgsql \
     pdo_pgsql \
     opcache \
-    pcntl
+    pcntl \
+    gd
 
 # Install and enable redis PHP extension
 RUN pecl install -o -f \
@@ -29,7 +31,8 @@ RUN pecl install -o -f \
     && \
     docker-php-ext-enable \
         redis \
-        xdebug
+        xdebug \
+        gd
 
 # Create PHP-FPM's and nginx user
 RUN groupadd \

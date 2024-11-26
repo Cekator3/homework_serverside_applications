@@ -6,10 +6,14 @@ use DB;
 use App\Models\ChangeLog;
 use App\Models\Permission;
 use Illuminate\Http\JsonResponse;
+use App\Exports\PermissionsExport;
+use Maatwebsite\Excel\Facades\Excel;
 use App\DTO\Permissions\PermissionDTO;
 use App\DTO\Permissions\PermissionListDTO;
+use App\Http\Requests\Users\ExcelFileRequest;
 use App\Http\Requests\Permissions\CreateRequest;
 use App\Http\Requests\Permissions\UpdateRequest;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PermissionsController
 {
@@ -74,5 +78,14 @@ class PermissionsController
             ['entity_name', '=', Permission::class],
             ['entity_id', '=', $permissionId]
         ])->get();
+    }
+
+    function import(ExcelFileRequest $request): JsonResponse
+    {
+    }
+
+    function export(): BinaryFileResponse
+    {
+        return Excel::download(new PermissionsExport, 'permissions.xlsx');
     }
 }

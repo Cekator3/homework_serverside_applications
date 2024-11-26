@@ -24,4 +24,10 @@ Route::controller(UsersController::class)
 
         Route::middleware(EnsureUserHasPermission::class . ':get-story-user')
             ->get('/{id}/story', 'getUserChangeLogs');
+
+        Route::middleware(EnsureUserHasPermission::class . ':export-user')
+            ->get('/export', 'export');
+
+        Route::middleware(EnsureUserHasPermission::class . ':import-user')
+            ->post('/import', 'import');
     });

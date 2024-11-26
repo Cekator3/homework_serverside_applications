@@ -5,12 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UserRole;
 use App\Models\ChangeLog;
+use App\Exports\UsersExport;
 use App\DTO\Auth\UserListDTO;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use App\DTO\UserRoles\UserRoleDTO;
+use App\Imports\Parsers\UsersParser;
+use Maatwebsite\Excel\Facades\Excel;
 use App\DTO\UserRoles\UserRoleListDTO;
+use App\Http\Requests\ExcelFileRequest;
+use App\Imports\Importers\UserImporter;
 use App\Http\Requests\Users\AddUserRoleRequest;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 
 class UsersController
@@ -75,5 +81,32 @@ class UsersController
             ['entity_name', '=', User::class],
             ['entity_id', '=', $userId]
         ])->get();
+    }
+
+    function import(ExcelFileRequest $request)
+    {
+        $parser = new UsersParser();
+        $parsedUsers = $parser->parse($request->file, ignoreErrors: $request->ignoreErrors);
+        if (! $request->ignoreErrors && $parser->hasErrors())
+        {
+            return [
+                'validation_errors' => $parser->getErrors(),
+                'import_messages' => [],
+                'import_errors' => [],
+            ];
+        }
+
+        $importer = new UserImporter();
+        $importer->import($parsedUsers, isUpdateAllowed: $request->isUpdatesAllowed);
+        return [
+            'validation_errors' => $parser->getErrors(),
+            'import_messages' => $importer->getMessages(),
+            'import_errors' => $importer->getErrors(),
+        ];
+    }
+
+    function export(): BinaryFileResponse
+    {
+        return Excel::download(new UsersExport, 'users.xlsx');
     }
 }

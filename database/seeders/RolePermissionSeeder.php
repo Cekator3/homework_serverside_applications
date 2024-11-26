@@ -27,7 +27,7 @@ class RolePermissionSeeder extends Seeder
     {
         $roles = $this->get_role_mappings();
         $permissions = $this->get_permission_mappings();
-        $entities_prefixes = ['get-list-', 'read-', 'create-', 'update-', 'delete-', 'restore-'];
+        $entities_prefixes = ['get-list-', 'read-', 'create-', 'update-', 'delete-', 'restore-', 'import-', 'export-'];
 
         $roles_permissions = [
             'Guest' => [],

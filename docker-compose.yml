@@ -66,6 +66,7 @@ services:
             context: .
             dockerfile: .docker/php/Dockerfile
         volumes:
+            # - .:/var/www/html
             # To share public data (css, js, images) between nginx and php
             - public:/var/www/html/public
             - public2:/var/www/html/storage/app/public
@@ -73,36 +74,6 @@ services:
             - .env
         networks:
             - app
-
-        develop:
-            watch:
-                - action: rebuild
-                  path: ./app
-                  target: /var/www/html/app
-                - action: rebuild
-                  path: ./bootstrap
-                  target: /var/www/html/bootstrap
-                - action: rebuild
-                  path: ./config
-                  target: /var/www/html/config
-                - action: rebuild
-                  path: ./database
-                  target: /var/www/html/database
-                - action: rebuild
-                  path: ./lang
-                  target: /var/www/html/lang
-                - action: rebuild
-                  path: ./public
-                  target: /var/www/html/public
-                - action: rebuild
-                  path: ./resources
-                  target: /var/www/html/resources
-                - action: rebuild
-                  path: ./routes
-                  target: /var/www/html/routes
-                - action: rebuild
-                  path: ./.env
-                  target: /var/www/html/.env
 
     laravel-queue: # очередь фоновых задач
         image: php_img

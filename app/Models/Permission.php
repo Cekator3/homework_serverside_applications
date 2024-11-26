@@ -22,7 +22,7 @@ class Permission extends Model
      */
     protected $hidden = [
         'deleted_at',
-        'deleted_by',
+        'created_at'
     ];
 
     /**

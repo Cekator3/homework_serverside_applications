@@ -11,6 +11,12 @@ Route::controller(PermissionsController::class)
         Route::middleware(EnsureUserHasPermission::class . ':get-list-permission')
             ->get('/', 'getPermissions');
 
+        Route::middleware(EnsureUserHasPermission::class . ':export-permission')
+            ->get('/export', 'export');
+
+        Route::middleware(EnsureUserHasPermission::class . ':import-permission')
+            ->post('/import', 'import');
+
         Route::middleware(EnsureUserHasPermission::class . ':read-permission')
             ->get('/{id}', 'getPermission');
 

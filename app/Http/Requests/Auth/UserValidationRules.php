@@ -9,6 +9,16 @@ class UserValidationRules
     public const NAME = 'required|alpha|max:255|min:7';
     public const EMAIL = 'required|email|unique:users';
     public const BIRTHDAY = 'required|date_format:Y-m-d';
+    public static function EMAIL(bool $isUnique) : array
+    {
+        $rules = [
+            'required',
+            'email'
+        ];
+        if ($isUnique)
+            $rules []= 'unique:users';
+        return $rules;
+    }
     public static function PASSWORD(bool $with_confirmation) : array
     {
         $rules = [
