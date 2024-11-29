@@ -28,9 +28,6 @@ services:
 
     redis:
         image: 'bitnami/redis:7.4.1'
-        volumes:
-            # To save redis data in persistent docker volume
-            - redis-data:/bitnami/redis/data
         environment:
             - REDIS_PASSWORD=${REDIS_PASSWORD}
         ports:
