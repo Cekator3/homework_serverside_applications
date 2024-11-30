@@ -1,6 +1,7 @@
 volumes:
     public:
     public2:
+    not_public:
     postgres-data:
     redis-data:
 
@@ -66,7 +67,7 @@ services:
             # - .:/var/www/html
             # To share public data (css, js, images) between nginx and php
             - public:/var/www/html/public
-            - public2:/var/www/html/storage/app/public
+            - not_public:/var/www/html/storage
         env_file:
             - .env
         networks:

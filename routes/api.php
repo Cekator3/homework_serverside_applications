@@ -10,3 +10,4 @@ require __DIR__.'/logs_requests.php';
 require __DIR__.'/application_usage_reports.php';
 require __DIR__.'/change_logs.php';
 require __DIR__.'/utils.php';
+require __DIR__.'/user_photos.php';

@@ -12,7 +12,8 @@ RUN apt-get install --quiet --yes --no-install-recommends \
     unzip \
     git \
     ssh \
-    libfreetype-dev libjpeg-dev libpng-dev
+    libfreetype-dev libjpeg-dev libpng-dev \
+    libmagickwand-dev
 
 # Install Database PHP extensions and zip ext.
 RUN docker-php-ext-install \
@@ -28,11 +29,12 @@ RUN docker-php-ext-install \
 RUN pecl install -o -f \
         redis-6.0.2 \
         xdebug \
-    && \
-    docker-php-ext-enable \
+        imagick
+RUN docker-php-ext-enable \
         redis \
         xdebug \
-        gd
+        gd \
+        imagick
 
 # Create PHP-FPM's and nginx user
 RUN groupadd \

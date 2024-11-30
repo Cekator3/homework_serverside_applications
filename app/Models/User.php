@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\UserRole;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -72,5 +73,10 @@ class User extends Authenticatable
         return $this->roles()->whereHas('permissions', function ($query) use ($permissionName) {
             $query->where('name', $permissionName);
         })->exists();
+    }
+
+    public function avatar(): BelongsTo
+    {
+        return $this->belongsTo(File::class, 'avatar_id');
     }
 }
