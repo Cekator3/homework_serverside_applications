@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Requests\Users\UploadUserPhotoRequest;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 
 class UserPhotosController
@@ -136,9 +137,42 @@ class UserPhotosController
     }
 
     /**
+     * Возвращает фотографии всех пользователей в архиве
+     */
+    function downloadAllArchive(): BinaryFileResponse
+    {
+        $user = auth()->user();
+
+        $files = \App\Models\File::get();
+        if ($files->isEmpty())
+            abort(RESPONSE::HTTP_BAD_REQUEST, 'No files available to archive');
+
+        $archive = new \ZipArchive();
+        $archiveFullpath = Storage::path("$user->name-photo-archive.zip");
+        Storage::delete("$user->name-photo-archive.zip");
+        $archive->open($archiveFullpath, \ZipArchive::CREATE);
+
+        foreach ($files as $file)
+        {
+            if (! str_starts_with($file->path, 'avatars/'))
+                $archive->addFile(Storage::path($file->path), "originals/$file->path");
+            else
+                $archive->addFile(Storage::path($file->path), $file->path);
+        }
+
+        $excelName = 'overview.xlsx';
+        Excel::store(new FilesExport, $excelName);
+        $archive->addFile(Storage::path($excelName), $excelName);
+        $archive->close();
+        Storage::delete($excelName);
+
+        return response()->download($archiveFullpath)->deleteFileAfterSend();
+    }
+
+    /**
      * Возвращает все фотографии в архиве
      */
-    function downloadArchive(int $userId)
+    function downloadArchive(int $userId): BinaryFileResponse
     {
         $user = auth()->user();
         if ($user->id !== $userId)
@@ -156,13 +190,13 @@ class UserPhotosController
         foreach ($files as $file)
         {
             if (! str_starts_with($file->path, 'avatars/'))
-                $archive->addFile(Storage::path($file->path), "originals/$file->name");
+                $archive->addFile(Storage::path($file->path), "originals/$file->path");
             else
-                $archive->addFile(Storage::path($file->path), "avatars/$file->name");
+                $archive->addFile(Storage::path($file->path), $file->path);
         }
 
         $excelName = 'overview.xlsx';
-        Excel::store(new FilesExport, $excelName);
+        Excel::store(new FilesExport($userId), $excelName);
         $archive->addFile(Storage::path($excelName), $excelName);
         $archive->close();
         Storage::delete($excelName);

@@ -12,9 +12,21 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
 class FilesExport implements FromCollection, WithHeadings, ShouldAutoSize
 {
+    public ?int $userId;
+
+    public function __construct(?int $userId = null)
+    {
+        $this->userId = $userId;
+    }
+
     public function collection()
     {
-        return \App\Models\File::where('files.created_by', auth()->user()->id)
+        $query = \App\Models\File::query();
+
+        if ($this->userId !== null)
+            $query = $query->where('files.created_by', $this->userId);
+
+        return $query
             ->join('users', 'files.created_by', 'users.id')
             ->select([
                 'files.name AS f_name',
@@ -30,7 +42,7 @@ class FilesExport implements FromCollection, WithHeadings, ShouldAutoSize
             });
     }
 
-    public function headings(): array
+    public function headings() : array
     {
         return [
             "Наименование файла",
